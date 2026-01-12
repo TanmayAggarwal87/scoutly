@@ -5,6 +5,7 @@ import { Sidebar } from "../components/sidebar";
 import { DashboardView } from "../components/dashboard-view";
 import { SourcesView } from "../components/sources-view";
 import { KeywordsView } from "../components/keywords-view";
+import { NotificationsView } from "../components/notifications-view";
 import { PreferencesView } from "../components/preferences-view";
 
 export default function App() {
@@ -45,41 +46,49 @@ export default function App() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar 
-        currentView={currentView} 
+      <Sidebar
+        currentView={currentView}
         onNavigate={setCurrentView}
         isOpen={isSidebarOpen}
         onClose={handleCloseSidebar}
       />
-      
+
       <div className="flex-1 overflow-hidden">
         {currentView === 'dashboard' && (
-          <DashboardView 
-            isDarkMode={isDarkMode} 
+          <DashboardView
+            isDarkMode={isDarkMode}
             onToggleDarkMode={handleToggleDarkMode}
             onLogout={handleLogout}
             onMenuClick={handleToggleSidebar}
           />
         )}
         {currentView === 'sources' && (
-          <SourcesView 
-            isDarkMode={isDarkMode} 
+          <SourcesView
+            isDarkMode={isDarkMode}
             onToggleDarkMode={handleToggleDarkMode}
             onLogout={handleLogout}
             onMenuClick={handleToggleSidebar}
           />
         )}
         {currentView === 'keywords' && (
-          <KeywordsView 
-            isDarkMode={isDarkMode} 
+          <KeywordsView
+            isDarkMode={isDarkMode}
             onToggleDarkMode={handleToggleDarkMode}
             onLogout={handleLogout}
             onMenuClick={handleToggleSidebar}
           />
         )}
         {currentView === 'preferences' && (
-          <PreferencesView 
-            isDarkMode={isDarkMode} 
+          <PreferencesView
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={handleToggleDarkMode}
+            onLogout={handleLogout}
+            onMenuClick={handleToggleSidebar}
+          />
+        )}
+        {currentView === 'notifications' && (
+          <NotificationsView
+            isDarkMode={isDarkMode}
             onToggleDarkMode={handleToggleDarkMode}
             onLogout={handleLogout}
             onMenuClick={handleToggleSidebar}

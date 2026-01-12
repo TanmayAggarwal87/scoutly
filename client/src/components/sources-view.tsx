@@ -1,61 +1,89 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Check } from "lucide-react";
 import { Header } from "./header";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Checkbox } from "./ui/checkbox";
+import { sources as sourcesApi, user as userApi } from "../lib/api";
 
-const predefinedCompanies = [
-  { id: '1', name: 'Google', url: 'https://careers.google.com' },
-  { id: '2', name: 'Meta', url: 'https://www.metacareers.com' },
-  { id: '3', name: 'Apple', url: 'https://jobs.apple.com' },
-  { id: '4', name: 'Amazon', url: 'https://www.amazon.jobs' },
-  { id: '5', name: 'Microsoft', url: 'https://careers.microsoft.com' },
-  { id: '6', name: 'Netflix', url: 'https://jobs.netflix.com' },
-  { id: '7', name: 'Stripe', url: 'https://stripe.com/jobs' },
-  { id: '8', name: 'Airbnb', url: 'https://careers.airbnb.com' },
-  { id: '9', name: 'Uber', url: 'https://www.uber.com/careers' },
-  { id: '10', name: 'Figma', url: 'https://www.figma.com/careers' },
-  { id: '11', name: 'Notion', url: 'https://www.notion.so/careers' },
-  { id: '12', name: 'Vercel', url: 'https://vercel.com/careers' },
-];
-
-export function SourcesView({ isDarkMode, onToggleDarkMode, onLogout, onMenuClick }: { 
-  isDarkMode: boolean; 
-  onToggleDarkMode: () => void; 
+export function SourcesView({ isDarkMode, onToggleDarkMode, onLogout, onMenuClick }: {
+  isDarkMode: boolean;
+  onToggleDarkMode: () => void;
   onLogout: () => void;
   onMenuClick: () => void;
 }) {
-  const [selectedSources, setSelectedSources] = useState<string[]>(['1', '5', '7']);
+  const [selectedSources, setSelectedSources] = useState<string[]>([]);
+  const [availableSources, setAvailableSources] = useState<any[]>([]);
   const [customCompanyName, setCustomCompanyName] = useState('');
   const [customUrl, setCustomUrl] = useState('');
 
-  const toggleSource = (id: string) => {
-    setSelectedSources((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [sourcesRes, userRes] = await Promise.all([
+        sourcesApi.getAll(),
+        userApi.getMe()
+      ]);
+      setAvailableSources(sourcesRes.data); // Assuming backend seeds some data or we handle empty
+
+      // If user has no active sources set, maybe select all?
+      if (userRes.data.activeSources) {
+        setSelectedSources(userRes.data.activeSources);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleAddCustom = () => {
+  const updateSources = async (newSources: string[]) => {
+    setSelectedSources(newSources);
+    try {
+      await userApi.updateSources(newSources);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const toggleSource = (id: string) => {
+    const newSources = selectedSources.includes(id)
+      ? selectedSources.filter((s) => s !== id)
+      : [...selectedSources, id];
+    updateSources(newSources);
+  };
+
+  const handleAddCustom = async () => {
     if (customCompanyName && customUrl) {
-      // In a real app, this would add to the list
-      setCustomCompanyName('');
-      setCustomUrl('');
+      try {
+        const { data } = await sourcesApi.addCustom({
+          name: customCompanyName,
+          url: customUrl,
+          type: 'custom'
+        });
+        setAvailableSources([...availableSources, data]);
+        updateSources([...selectedSources, data._id]); // Auto select
+        setCustomCompanyName('');
+        setCustomUrl('');
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
 
   return (
     <div className="flex flex-col h-screen">
-      <Header 
-        title="Source Selection" 
+      <Header
+        title="Source Selection"
         subtitle="Choose which companies and websites to monitor"
         isDarkMode={isDarkMode}
         onToggleDarkMode={onToggleDarkMode}
         onLogout={onLogout}
         onMenuClick={onMenuClick}
       />
-      
+
       <main className="flex-1 overflow-auto">
         <div className="max-w-4xl mx-auto p-8">
           <div className="space-y-8">
@@ -63,17 +91,17 @@ export function SourcesView({ isDarkMode, onToggleDarkMode, onLogout, onMenuClic
             <div>
               <h3 className="mb-4">Popular Companies</h3>
               <div className="bg-card border border-border rounded-lg divide-y divide-border">
-                {predefinedCompanies.map((company) => {
-                  const isSelected = selectedSources.includes(company.id);
-                  
+                {availableSources.map((company) => {
+                  const isSelected = selectedSources.includes(company._id);
+
                   return (
                     <label
-                      key={company.id}
+                      key={company._id}
                       className="flex items-center gap-4 p-4 hover:bg-accent cursor-pointer transition-colors"
                     >
                       <Checkbox
                         checked={isSelected}
-                        onCheckedChange={() => toggleSource(company.id)}
+                        onCheckedChange={() => toggleSource(company._id)}
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2">

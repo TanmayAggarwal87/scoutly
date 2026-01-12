@@ -1,29 +1,55 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Plus } from "lucide-react";
 import { Header } from "./header";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Badge } from "./ui/badge";
+import { user as userApi } from "../lib/api";
 
-export function KeywordsView({ isDarkMode, onToggleDarkMode, onLogout, onMenuClick }: { 
-  isDarkMode: boolean; 
-  onToggleDarkMode: () => void; 
+export function KeywordsView({ isDarkMode, onToggleDarkMode, onLogout, onMenuClick }: {
+  isDarkMode: boolean;
+  onToggleDarkMode: () => void;
   onLogout: () => void;
   onMenuClick: () => void;
 }) {
-  const [keywords, setKeywords] = useState<string[]>(['intern', 'backend', 'frontend', 'software engineer']);
+  const [keywords, setKeywords] = useState<string[]>([]);
   const [newKeyword, setNewKeyword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadKeywords();
+  }, []);
+
+  const loadKeywords = async () => {
+    try {
+      const { data } = await userApi.getMe();
+      if (data.keywords) setKeywords(data.keywords);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const updateKeywords = async (newKeywords: string[]) => {
+    try {
+      setKeywords(newKeywords);
+      await userApi.updateKeywords(newKeywords);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const addKeyword = () => {
     if (newKeyword.trim() && !keywords.includes(newKeyword.trim().toLowerCase())) {
-      setKeywords([...keywords, newKeyword.trim().toLowerCase()]);
+      const updated = [...keywords, newKeyword.trim().toLowerCase()];
+      updateKeywords(updated);
       setNewKeyword('');
     }
   };
 
   const removeKeyword = (keyword: string) => {
-    setKeywords(keywords.filter((k) => k !== keyword));
+    const updated = keywords.filter((k) => k !== keyword);
+    updateKeywords(updated);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -34,15 +60,15 @@ export function KeywordsView({ isDarkMode, onToggleDarkMode, onLogout, onMenuCli
 
   return (
     <div className="flex flex-col h-screen">
-      <Header 
-        title="Keyword Filters" 
+      <Header
+        title="Keyword Filters"
         subtitle="Define keywords to filter relevant job postings"
         isDarkMode={isDarkMode}
         onToggleDarkMode={onToggleDarkMode}
         onLogout={onLogout}
         onMenuClick={onMenuClick}
       />
-      
+
       <main className="flex-1 overflow-auto">
         <div className="max-w-4xl mx-auto p-8">
           <div className="space-y-8">
@@ -117,7 +143,8 @@ export function KeywordsView({ isDarkMode, onToggleDarkMode, onLogout, onMenuCli
                     size="sm"
                     onClick={() => {
                       if (!keywords.includes(suggestion)) {
-                        setKeywords([...keywords, suggestion]);
+                        const updated = [...keywords, suggestion];
+                        updateKeywords(updated);
                       }
                     }}
                     disabled={keywords.includes(suggestion)}
